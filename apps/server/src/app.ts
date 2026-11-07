@@ -92,8 +92,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   // ---- API routes ----
   app.register(
     async (api) => {
-      authRoutes(api);
-      userRoutes(api);
+      api.register(authRoutes, { prefix: '/auth' });
+      api.register(userRoutes, { prefix: '/users' });
       serverRoutes(api);
       channelRoutes(api);
       dmRoutes(api);
