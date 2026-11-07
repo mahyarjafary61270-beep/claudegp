@@ -92,13 +92,13 @@ export function channelRoutes(app: FastifyInstance): void {
     const rows = await prisma.$queryRaw<
       { id: string; channelId: string; content: string; createdAt: Date; authorId: string | null; rank: number }[]
     >(Prisma.sql`
-      SELECT m.id, m."channelId", m.content, m."createdAt", m."authorId",
-             ts_rank_cd(m.search_vector, plainto_tsquery('simple', ${q})) AS rank
-      FROM messages m
-      JOIN channels c ON c.id = m."channelId"
+      SELECT m."id", m."channelId", m."content", m."createdAt", m."authorId",
+             ts_rank_cd(m."search_vector", plainto_tsquery('simple', ${q})) AS rank
+      FROM "Message" m
+      JOIN "Channel" c ON c."id" = m."channelId"
       WHERE c."serverId" = ${id}
-        AND m.search_vector @@ plainto_tsquery('simple', ${q})
-      ORDER BY rank DESC, m.id DESC
+        AND m."search_vector" @@ plainto_tsquery('simple', ${q})
+      ORDER BY rank DESC, m."id" DESC
       LIMIT 30
     `);
     const authorIds = [...new Set(rows.map((r) => r.authorId).filter((x): x is string => !!x))];

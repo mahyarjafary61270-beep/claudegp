@@ -33,9 +33,9 @@ export function messageRoutes(app: FastifyInstance): void {
              COUNT(*)::int AS cnt,
              COUNT(*) FILTER (WHERE mm."userId" IS NOT NULL)::int AS mentions,
              MAX(m."createdAt") AS last_at
-      FROM messages m
-      LEFT JOIN message_mentions mm ON mm."messageId" = m.id AND mm."userId" = ${userId}
-      LEFT JOIN read_states rs ON rs."channelId" = m."channelId" AND rs."userId" = ${userId}
+      FROM "Message" m
+      LEFT JOIN "MessageMention" mm ON mm."messageId" = m."id" AND mm."userId" = ${userId}
+      LEFT JOIN "ReadState" rs ON rs."channelId" = m."channelId" AND rs."userId" = ${userId}
       WHERE m."channelId" IN (${Prisma.join(channelIds)})
         AND m."authorId" IS DISTINCT FROM ${userId}
         AND m."createdAt" > COALESCE(rs."lastReadAt", ${epoch}::timestamptz)
