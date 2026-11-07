@@ -12,9 +12,9 @@ build/
 .env.*.local
 apps/server/.env
 
-# data
-data/
-uploads/
+# data (root-anchored: never ignore source dirs named like these)
+/data/
+/uploads/
 *.sqlite
 
 # logs & temp
