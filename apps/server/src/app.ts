@@ -112,7 +112,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // ---- SPA static files ----
-  const webDist = env.NODE_ENV === 'production' ? join(__dirname, '../../../web/dist') : join(__dirname, '../../../web/dist');
+  // from apps/server/dist: ../.. = apps/ → apps/web/dist
+  const webDist = join(__dirname, '../../web/dist');
   if (existsSync(webDist)) {
     await app.register(fastifyStatic, {
       root: webDist,
