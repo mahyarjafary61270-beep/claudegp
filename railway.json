@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "sh -c './node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/index.js'",
+    "startCommand": "sh -c 'if [ \"$MIGRATE_RESET_ONCE\" = \"1\" ]; then echo \"MIGRATE_RESET_ONCE is set — resetting database (drops all data!)\"; ./node_modules/.bin/prisma migrate reset --force --schema apps/server/prisma/schema.prisma || exit 1; fi; ./node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/index.js'",
     "healthcheckPath": "/healthz",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",

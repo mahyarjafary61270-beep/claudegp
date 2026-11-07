@@ -58,5 +58,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# migrate deploy then start; Railway injects PORT
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/index.js"]
+# migrate deploy then start; Railway injects PORT.
+# Optional one-time repair: set MIGRATE_RESET_ONCE=1 to wipe & replay migrations (use only on an empty/dev DB!)
+CMD ["sh", "-c", "if [ \"$MIGRATE_RESET_ONCE\" = \"1\" ]; then echo 'MIGRATE_RESET_ONCE is set — resetting database (drops all data!)'; ./node_modules/.bin/prisma migrate reset --force --schema apps/server/prisma/schema.prisma || exit 1; fi; ./node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && node apps/server/dist/index.js"]
