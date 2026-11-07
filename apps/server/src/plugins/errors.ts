@@ -42,8 +42,5 @@ export function registerErrorHandler(app: FastifyInstance): void {
     logger.error({ err: err as Error, url: req.url }, 'unhandled error');
     void reply.code(500).send({ error: 'INTERNAL', message: 'Internal server error' });
   });
-
-  app.setNotFoundHandler((req, reply) => {
-    void reply.code(404).send({ error: 'NOT_FOUND', message: 'Route not found' });
-  });
+  // NOTE: the SPA-aware notFound handler is set once in app.ts
 }

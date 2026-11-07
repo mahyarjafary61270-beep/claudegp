@@ -114,6 +114,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // ---- SPA static files ----
   // from apps/server/dist: ../.. = apps/ → apps/web/dist
   const webDist = join(__dirname, '../../web/dist');
+  let indexHtml: string | null = null;
   if (existsSync(webDist)) {
     await app.register(fastifyStatic, {
       root: webDist,
@@ -126,18 +127,20 @@ export async function buildApp(): Promise<FastifyInstance> {
         }
       },
     });
-    const indexHtml = await readFile(join(webDist, 'index.html'), 'utf8').catch(() => null);
-    app.setNotFoundHandler((req, reply) => {
-      if (req.method === 'GET' && !req.url.startsWith('/api') && req.url !== '/ws' && indexHtml) {
-        void reply.header('content-type', 'text/html; charset=utf-8').header('cache-control', 'no-cache').send(indexHtml);
-        return;
-      }
-      void reply.code(404).send({ error: 'NOT_FOUND', message: 'Route not found' });
-    });
+    indexHtml = await readFile(join(webDist, 'index.html'), 'utf8').catch(() => null);
     logger.info({ webDist }, 'serving SPA');
   } else {
     logger.info('web dist not found — API only mode (dev: use vite dev server)');
   }
+
+  // Single notFound handler: SPA fallback for page loads, JSON for everything else.
+  app.setNotFoundHandler((req, reply) => {
+    if (req.method === 'GET' && !req.url.startsWith('/api') && req.url !== '/ws' && indexHtml) {
+      void reply.header('content-type', 'text/html; charset=utf-8').header('cache-control', 'no-cache').send(indexHtml);
+      return;
+    }
+    void reply.code(404).send({ error: 'NOT_FOUND', message: 'Route not found' });
+  });
 
   return app;
 }
