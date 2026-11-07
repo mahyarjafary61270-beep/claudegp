@@ -1,0 +1,31 @@
+{
+  "name": "mahyar-gap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mahyar Gap — private real-time chat, voice and radio for close friends",
+  "workspaces": [
+    "packages/shared",
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w @mg/server",
+    "dev:web": "npm run dev -w @mg/web",
+    "build": "npm run build -w @mg/shared && npm run build -w @mg/server && npm run build -w @mg/web",
+    "typecheck": "npm run typecheck -w @mg/shared && npm run typecheck -w @mg/server && npm run typecheck -w @mg/web",
+    "test": "npm run test -w @mg/server && npm run test -w @mg/web",
+    "lint": "eslint packages apps --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "db:migrate": "npm run migrate -w @mg/server",
+    "db:seed": "npm run seed -w @mg/server"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

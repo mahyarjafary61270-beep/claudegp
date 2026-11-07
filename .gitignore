@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# local env & secrets
+.env
+.env.local
+.env.*.local
+apps/server/.env
+
+# data
+data/
+uploads/
+*.sqlite
+
+# logs & temp
+logs/
+*.log
+npm-debug.log*
+
+# editor/os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# prisma
+apps/server/diff_err.log
+
+# vitest
+coverage/
+
+# vite
+apps/web/dist/

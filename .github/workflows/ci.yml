@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema apps/server/prisma/schema.prisma
+
+      - name: Build shared
+        run: npm run build -w @mg/shared
+
+      - name: Typecheck server
+        run: npm run typecheck -w @mg/server
+
+      - name: Typecheck web
+        run: npm run typecheck -w @mg/web
+
+      - name: Build server
+        run: npm run build -w @mg/server
+
+      - name: Build web
+        run: npm run build -w @mg/web
+
+      - name: Tests
+        run: npm test

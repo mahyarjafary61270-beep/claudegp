@@ -1,0 +1,267 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ChannelType {
+  TEXT
+  VOICE
+  DM
+}
+
+enum MessageKind {
+  TEXT
+  SYSTEM
+}
+
+enum RadioMode {
+  INGRESS
+  RTC
+}
+
+model User {
+  id           String    @id
+  username     String    @unique
+  displayName  String
+  passwordHash String
+  avatarUrl    String?
+  statusText   String?
+  accentColor  String?
+  isGlobalAdmin Boolean  @default(false)
+  createdAt    DateTime  @default(now())
+  lastSeenAt   DateTime  @default(now())
+
+  members        Member[]
+  messages       Message[]
+  reactions      MessageReaction[]
+  readStates     ReadState[]
+  refreshTokens  RefreshToken[]
+  pins           Pin[]
+  attachments    Attachment[]
+  bans           ServerBan[]
+  invites        Invite[]
+  mentions       MessageMention[]
+  dmMembers      ChannelMember[]
+  ownedServers   Server[]          @relation("ServerOwner")
+
+  @@index([lastSeenAt])
+}
+
+model Server {
+  id        String   @id
+  name      String
+  ownerId   String
+  iconColor String   @default("#ff4d8d")
+  createdAt DateTime @default(now())
+
+  owner    User    @relation("ServerOwner", fields: [ownerId], references: [id])
+  members  Member[]
+  channels Channel[]
+  invites  Invite[]
+  bans     ServerBan[]
+}
+
+model Member {
+  serverId String
+  userId   String
+  role     Role     @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([serverId, userId])
+  @@index([userId])
+}
+
+model ServerBan {
+  serverId    String
+  userId      String
+  reason      String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([serverId, userId])
+}
+
+model Invite {
+  id          String    @id
+  code        String    @unique
+  serverId    String?
+  createdById String
+  maxUses     Int?
+  uses        Int       @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  invitedBy User   @relation(fields: [createdById], references: [id])
+
+  @@index([serverId])
+}
+
+model Channel {
+  id         String      @id
+  serverId   String?
+  name       String
+  type       ChannelType
+  topic      String?
+  position   Int         @default(0)
+  createdBy  String?
+  createdAt  DateTime    @default(now())
+  lastMsgAt  DateTime?
+
+  server  Server?         @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  members ChannelMember[]
+  messages Message[]
+  pins    Pin[]
+  readStates ReadState[]
+  radioStates RadioState[]
+
+  @@index([serverId, type, position])
+}
+
+/// DM channel participants
+model ChannelMember {
+  channelId String
+  userId    String
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id         String      @id
+  channelId  String
+  authorId   String?
+  kind       MessageKind @default(TEXT)
+  content    String      @default("")
+  replyToId  String?
+  editedAt   DateTime?
+  createdAt  DateTime    @default(now())
+
+  channel     Channel           @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author      User?             @relation(fields: [authorId], references: [id])
+  replyTo     Message?          @relation("Reply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     Message[]         @relation("Reply")
+  attachments Attachment[]
+  reactions   MessageReaction[]
+  mentions    MessageMention[]
+  pins        Pin[]
+
+  @@index([channelId, createdAt])
+  @@index([channelId, id])
+  @@index([authorId])
+}
+
+model Attachment {
+  id         String   @id
+  messageId  String?
+  uploaderId String
+  path       String
+  mime       String
+  size       Int
+  width      Int?
+  height     Int?
+  name       String
+  createdAt  DateTime @default(now())
+
+  message  Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploaderId], references: [id])
+
+  @@index([messageId])
+  @@index([createdAt])
+}
+
+model MessageReaction {
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model MessageMention {
+  messageId String
+  userId    String
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId])
+}
+
+model ReadState {
+  userId    String
+  channelId String
+  lastReadAt DateTime @default(now())
+  lastReadMessageId String?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, channelId])
+  @@index([channelId])
+}
+
+model Pin {
+  channelId   String
+  messageId   String
+  pinnedById  String
+  pinnedAt    DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinnedBy User  @relation(fields: [pinnedById], references: [id])
+
+  @@id([channelId, messageId])
+}
+
+model RefreshToken {
+  id          String    @id
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedById String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RadioState {
+  channelId   String    @id
+  serverId    String?
+  stationId   String
+  mode        RadioMode
+  ingressId   String?
+  startedById String?
+  startedAt   DateTime  @default(now())
+  lastActiveAt DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+}
