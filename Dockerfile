@@ -41,7 +41,7 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 # su-exec lets the entrypoint chown the mounted volume, then drop to the nodejs user
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl su-exec && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl gosu && rm -rf /var/lib/apt/lists/* \
  && groupadd -r nodejs && useradd -r -g nodejs nodejs
 
 COPY --from=prod-deps /app/node_modules node_modules
@@ -59,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
 # Start as root: fix the mounted volume ownership (Railway volumes mount as root),
 # run migrations, then drop privileges to the unprivileged nodejs user for the server.
 # Optional one-time repair: set MIGRATE_RESET_ONCE=1 to wipe & replay migrations (empty/dev DBs only!)
-CMD ["sh", "-c", "mkdir -p /data/uploads && chown -R nodejs:nodejs /data; if [ \"$MIGRATE_RESET_ONCE\" = \"1\" ]; then echo 'MIGRATE_RESET_ONCE is set — resetting database (drops all data!)'; ./node_modules/.bin/prisma migrate reset --force --schema apps/server/prisma/schema.prisma || exit 1; fi; ./node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && exec su-exec nodejs node apps/server/dist/index.js"]
+CMD ["sh", "-c", "mkdir -p /data/uploads && chown -R nodejs:nodejs /data; if [ \"$MIGRATE_RESET_ONCE\" = \"1\" ]; then echo 'MIGRATE_RESET_ONCE is set — resetting database (drops all data!)'; ./node_modules/.bin/prisma migrate reset --force --schema apps/server/prisma/schema.prisma || exit 1; fi; ./node_modules/.bin/prisma migrate deploy --schema apps/server/prisma/schema.prisma && exec gosu nodejs node apps/server/dist/index.js"]
