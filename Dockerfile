@@ -1,5 +1,5 @@
 # ── build stage: install everything, compile, generate prisma client ──────────
-FROM node:20-slim AS build
+FROM node:22-slim AS build
 WORKDIR /app
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 
@@ -23,7 +23,7 @@ RUN npm run build -w @mg/shared \
  && npm run build -w @mg/web
 
 # ── prod deps stage: only runtime dependencies ───────────────────────────────
-FROM node:20-slim AS prod-deps
+FROM node:22-slim AS prod-deps
 WORKDIR /app
 ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
@@ -31,12 +31,13 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && r
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/server/package.json apps/server/
+COPY apps/server/prisma/schema.prisma apps/server/prisma/
 COPY apps/web/package.json apps/web/
 RUN npm ci --omit=dev --no-audit --no-fund \
  && npx --yes prisma generate --schema apps/server/prisma/schema.prisma
 
 # ── runtime stage ─────────────────────────────────────────────────────────────
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/* \
